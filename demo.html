@@ -15,6 +15,44 @@
 <link rel="shortcut icon" href="">
 <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
 <script src="js/jq-maskinput.js"></script>
+<script>
+  $(function() {
+    $(".mask").maskInput();
+
+    var el = $("#dateTest").get(0);
+
+    var target$ = $(el);
+    var font =　target$.css("font-size") + " " + target$.css("font-family");
+    var pos = { x: 0, y: 0 };
+    var borderTopWidth =  parseInt(target$.css("border-top-width"), 10);
+    var borderLeftWidth =  parseInt(target$.css("border-left-width"), 10);
+
+    pos.y = parseInt(target$.css("padding-top"), 10) + borderTopWidth;
+    pos.x = parseInt(target$.css("padding-left"), 10) + borderLeftWidth;
+
+    var ctx = document.getElementById('canvas').getContext('2d');
+    ctx.textBaseline = "top";
+    ctx.font = font;
+    ctx.fillStyle = "#999";
+    ctx.fillText("YYYY/MM/DD", pos.x, pos.y);
+
+    var dataUrl = document.getElementById('canvas').toDataURL();
+    target$.css("background-image", "url(" + dataUrl + ")");
+
+
+  });
+  
+</script>
+
+<style type="text/css">
+  .test {
+    /*font-family: */
+  }
+  #dateTest {
+    vertical-align: top;
+  }
+</style>
+
 </head>
 <body>
 <div class="container">
@@ -22,7 +60,21 @@
   <h1>マスク入力デモ</h1>
   <div class="row" style="margin-top:30px;">
     <div class="col-xs-3 text-right">日付</div>
-    <div class="col-xs-9"><input type="text"></div></div>
+    <div class="col-xs-9">
+      <input type="text" class="mask" data-mask-format="####/aaAA/dd"></div>
+    </div>
+    <div class="col-xs-3 text-right">日付</div>
+    <div class="col-xs-9">
+      <input type="text" class="mask" data-mask-format="####"></div>
+    </div>
+  </div>
+
+  <div id="wrap" style="border:1px solid #999;">
+    <canvas id="canvas" width="300px" height="100px"></canvas>
+  </div>
+
+  <div style="margin:20px 0 0 20px;">
+      <input type="text" id="dateTest" data-mask-format="yyyy/MM/dd"></div>
   </div>
 </div>
 </body>
