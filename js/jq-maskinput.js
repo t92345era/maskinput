@@ -96,13 +96,63 @@ var Util = function () {
 
 
   _createClass(Util, null, [{
-    key: "toPixel",
+    key: 'toPixel',
     value: function toPixel(direction) {
       //TODO:一旦これ
       return parseInt(direction);
     }
+
+    /**
+     * 指定されたキーコードに対応する文字を取得する
+     * @param {Number} keyCode 
+     */
+
   }, {
-    key: "Test",
+    key: 'keyCodeToChar',
+    value: function keyCodeToChar(keyCode) {
+      return String.fromCharCode(keyCode);
+    }
+
+    /**
+     * 指定した要素の現在のキャレット位置を取得する。
+     * @param {Element} el 
+     */
+
+  }, {
+    key: 'getCaretPosition',
+    value: function getCaretPosition(el) {
+      if (el.selectionStart) {
+        return el.selectionStart;
+      } else if (document.selection) {
+        el.focus();
+        var r = document.selection.createRange();
+        if (r == null) {
+          return 0;
+        }
+        var re = el.createTextRange(),
+            rc = re.duplicate();
+        re.moveToBookmark(r.getBookmark());
+        rc.setEndPoint('EndToStart', re);
+        return rc.text.length;
+      }
+      return 0;
+    }
+
+    /**
+     * 指定した要素のキャレット位置を設定する。
+     * @param {Element} el 
+     * @param {Number} position 
+     * @return なし
+     */
+
+  }, {
+    key: 'setCaretPosition',
+    value: function setCaretPosition(el, position) {
+      el.selectionStart = position;
+      el.selectionEnd = position;
+    }
+  }, {
+    key: 'Test',
     value: function Test() {}
   }]);
 
@@ -215,22 +265,88 @@ var MaskConfig = function () {
     }
 
     /**
-     * 指定した位置が入力文字か固定文字かの判定を行う
-     * @param {Number} position　検査を行う入力位置（０から始まるインデックル）
+     * 指定位置のマスク文字を取得する。
+     * @param {Number} position 
+     * @return 指定位置のマスク文字。位置が不正な場合は空文字。
+     */
+
+  }, {
+    key: "getMaskChar",
+    value: function getMaskChar(position) {
+      //無効なマスク、位置不正
+      if (!this.isValid() || position < 0 || this.length <= position) {
+        return "";
+      }
+      //指定位置のマスクを返す
+      var msk = this.format.substr(position, 1);
+      return msk;
+    }
+
+    /**
+     * 指定した位置が入力文字か入力文字かの判定を行う
+     * @param {Number} position　検査を行う入力位置（０から始まるインデックス）
      * @return 入力文字の場合 true 
      */
 
   }, {
     key: "isInput",
     value: function isInput(position) {
-      //無効なマスク、位置不正
-      if (!this.isValid() || position < 0 || this.length <= position) {
+      //マスク文字取得
+      var msk = this.getMaskChar(position);
+      if (msk == "") return false;
+
+      //指定された位置のマスク文字が入力マスクか判定
+      return MaskConfig.INPUT_MASK_CHARS.indexOf(msk) >= 0;
+    }
+
+    /**
+     * 指定した位置が入力文字か固定文字かの判定を行う
+     * @param {Number} position　検査を行う入力位置（０から始まるインデックス）
+     * @return 固定文字の場合 true 
+     */
+
+  }, {
+    key: "isFixChar",
+    value: function isFixChar(position) {
+      //マスク文字取得
+      var msk = this.getMaskChar(position);
+      if (msk == "") return false;
+
+      //固定文字か判定
+      return MaskConfig.INPUT_MASK_CHARS.indexOf(msk) < 0;
+    }
+
+    /**
+     * 指定位置に、指定した文字が入力可能かを検証します。
+     * @param {入力位置} position 
+     * @param {検証する文字} char 
+     * @return true：入力可、false：入力不可
+     */
+
+  }, {
+    key: "testInput",
+    value: function testInput(position, char) {
+
+      if (!this.isInput(position)) {
+        //指定した位置が入力文字でない場合、入力不可として返却
         return false;
       }
 
-      //指定された位置のマスク文字が入力マスクか判定
-      var msk = this.format.substr(position, 1);
-      return MaskConfig.INPUT_MASK_CHARS.indexOf(msk) >= 0;
+      var mask = this.getMaskChar(position);
+      var result;
+
+      if (mask == MaskConfig.MASK_YEAR || mask == MaskConfig.MASK_MONTH || mask == MaskConfig.MASK_DAY || mask == MaskConfig.MASK_NUM) {
+        //数字入力
+        result = /[0-9]/gi.test(char);
+      } else if (mask == MaskConfig.MASK_L_ALPHA) {
+        //小文字の英字入力
+        result = /[a-z]/g.test(char);
+      } else if (mask == MaskConfig.MASK_U_ALPHA) {
+        //大文字の英字入力
+        result = /[A-Z]/g.test(char);
+      }
+
+      return result;
     }
 
     /**
@@ -315,7 +431,6 @@ $(function () {
 
 //プラグイン処理
 jQuery.fn.maskInput = function () {
-  var _this = this;
 
   //対象要素分のループ
   return this.each(function (index, el) {
@@ -323,10 +438,87 @@ jQuery.fn.maskInput = function () {
     //設定されたマスク文字列で、設定クラス生成
     var config = new _maskconfig2.default($(el).data("mask-format"));
 
-    //キーアップイベント。キーボード入力で値が変更されたタイミングをハンドリング
-    $(_this).keyup(function () {
+    /**
+     * キーダウン
+     */
+    $(el).keydown(function (e) {
 
-      _draw2.default.drawBackground(canvas, el, config);
+      var move = 0;
+      if (e.keyCode == keyCode.BackSpace) {
+        move = -1;
+      } else if (e.keyCode == keyCode.Left) {
+        move = -1;
+      } else if (e.keyCode == keyCode.Right) {
+        move = 1;
+      }
+
+      var caretIndex = _util2.default.getCaretPosition(this);
+      while (move != 0) {
+        caretIndex = caretIndex + move;
+
+        if (config.isInput(caretIndex)) {
+          //入力位置までキャレットを移動する
+          _util2.default.setCaretPosition(el, caretIndex);
+          break;
+        }
+        if (caretIndex <= 0) {
+          _util2.default.setCaretPosition(el, 0);
+          break;
+        }
+        if (caretIndex >= $(el).val().length) {
+          _util2.default.setCaretPosition(el, caretIndex);
+          break;
+        }
+      }
+
+      return false;
+    });
+
+    /**
+     * 入力抑止用のキープレスイベント
+     */
+    $(el).keypress(function (e) {
+
+      console.log("key press:" + _util2.default.keyCodeToChar(e.charCode));
+
+      //入力位置、入力文字を取得する
+      var caretIndex = _util2.default.getCaretPosition(this);
+      var inputChar = _util2.default.keyCodeToChar(e.charCode);
+
+      //入力可能文字か判定する
+      var result = config.testInput(caretIndex, inputChar);
+
+      //固定文字は入力補完
+      if (result && config.isFixChar(caretIndex + 1)) {
+
+        var index = caretIndex + 1;
+        var hokanMoji = "";
+        while (true) {
+          if (!config.isFixChar(index)) break;
+          hokanMoji += config.getMaskChar(index);
+          index++;
+        }
+
+        //入力補完文字を後ろに足す
+        setTimeout(function () {
+          return $(el).val($(el).val() + hokanMoji);
+        }, 0);
+      }
+
+      //マスク文字描画
+      //setTimeout(() => Draw.drawBackground(canvas, el, config), 0);
+
+      //入力可能文字の場合、trueを返却
+      return result;
+    });
+
+    //キーアップイベント。キーボード入力で値が変更されたタイミングをハンドリング
+    $(el).keyup(function () {
+
+      setTimeout(function () {
+        return _draw2.default.drawBackground(canvas, el, config);
+      }, 0);
+      //;
     });
 
     //初回のマスク背景色の描画処理
@@ -334,6 +526,16 @@ jQuery.fn.maskInput = function () {
       _draw2.default.drawBackground(canvas, el, config);
     }, 1);
   });
+};
+
+var keyCode = {
+  BackSpace: 8,
+  Tab: 9,
+  Left: 37,
+  Up: 38,
+  Right: 39,
+  Down: 40,
+  Delete: 46
 };
 
 /***/ }),

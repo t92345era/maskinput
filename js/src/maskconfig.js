@@ -58,19 +58,79 @@ export default class MaskConfig {
   }
 
   /**
-   * 指定した位置が入力文字か固定文字かの判定を行う
-   * @param {Number} position　検査を行う入力位置（０から始まるインデックル）
+   * 指定位置のマスク文字を取得する。
+   * @param {Number} position 
+   * @return 指定位置のマスク文字。位置が不正な場合は空文字。
+   */
+  getMaskChar(position) {
+    //無効なマスク、位置不正
+    if (!this.isValid() || position < 0 || this.length <= position) {
+      return "";
+    }
+    //指定位置のマスクを返す
+    var msk = this.format.substr(position, 1);
+    return msk;
+  }
+
+  /**
+   * 指定した位置が入力文字か入力文字かの判定を行う
+   * @param {Number} position　検査を行う入力位置（０から始まるインデックス）
    * @return 入力文字の場合 true 
    */
   isInput(position) {
-    //無効なマスク、位置不正
-    if (!this.isValid() || position < 0 || this.length <= position) {
+    //マスク文字取得
+    var msk = this.getMaskChar(position);
+    if (msk == "") return false;
+
+    //指定された位置のマスク文字が入力マスクか判定
+    return MaskConfig.INPUT_MASK_CHARS.indexOf(msk) >= 0;
+  }
+
+  /**
+   * 指定した位置が入力文字か固定文字かの判定を行う
+   * @param {Number} position　検査を行う入力位置（０から始まるインデックス）
+   * @return 固定文字の場合 true 
+   */
+  isFixChar(position) {
+    //マスク文字取得
+    var msk = this.getMaskChar(position);
+    if (msk == "") return false;
+
+    //固定文字か判定
+    return MaskConfig.INPUT_MASK_CHARS.indexOf(msk) < 0;
+  }
+
+  /**
+   * 指定位置に、指定した文字が入力可能かを検証します。
+   * @param {入力位置} position 
+   * @param {検証する文字} char 
+   * @return true：入力可、false：入力不可
+   */
+  testInput(position, char) {
+
+    if (!this.isInput(position)) {
+      //指定した位置が入力文字でない場合、入力不可として返却
       return false;
     }
 
-    //指定された位置のマスク文字が入力マスクか判定
-    var msk = this.format.substr(position, 1);
-    return MaskConfig.INPUT_MASK_CHARS.indexOf(msk) >= 0;
+    let mask = this.getMaskChar(position);
+    var result;
+    
+    if (mask == MaskConfig.MASK_YEAR
+      || mask == MaskConfig.MASK_MONTH
+      || mask == MaskConfig.MASK_DAY
+      || mask == MaskConfig.MASK_NUM) {
+      //数字入力
+      result = /[0-9]/gi.test(char);
+    } else if (mask == MaskConfig.MASK_L_ALPHA) {
+      //小文字の英字入力
+      result = /[a-z]/g.test(char);
+    } else if (mask == MaskConfig.MASK_U_ALPHA) {
+      //大文字の英字入力
+      result = /[A-Z]/g.test(char);
+    }
+
+    return result;
   }
 
   /**
