@@ -30,7 +30,7 @@ export default class Util {
    * @param {Element} el 
    */
   static getCaretPosition(el) { 
-    if (el.selectionStart) { 
+    if (el.selectionStart !== undefined) { 
       return el.selectionStart; 
     } else if (document.selection) { 
       el.focus(); 
@@ -48,15 +48,72 @@ export default class Util {
   }
 
   /**
+   * 
+   * @param {Element} el テキストボックスで現在選択されているテキストを取得する
+   */
+  static getInputSelectionText(el) {
+    
+    if (el.selectionStart !== undefined) { 
+      if (el.selectionStart < el.selectionEnd) {
+        return $(el).val().substring(el.selectionStart, el.selectionEnd);
+      } else {
+        return "";
+      }
+
+    } else {
+      el.focus(); 
+      var r = document.selection.createRange(); 
+      if (r == null) { 
+        return ""; 
+      } 
+      return r.text;
+    }
+  }
+
+  /**
    * 指定した要素のキャレット位置を設定する。
    * @param {Element} el 
    * @param {Number} position 
    * @return なし
    */
   static setCaretPosition(el, position) {
-    el.selectionStart = position;
-    el.selectionEnd = position;
+    if (el.selectionStart) {
+      el.selectionStart = position;
+      el.selectionEnd = position;
+    }
   }
+
+  /**
+   * 指定した文字列の前後の空白を取り除いた文字列を取得する。
+   * @param {String} target 対象文字列
+   * @return 前後の空白を取り除いた文字列
+   */
+  static trim(target) {
+    if (typeof target !== "string") return target;
+    return target.replace(/(^\s+)|(\s+$)/g, "");
+  }
+
+  /**
+   * 指定した文字列の右端の空白を取り除いた文字列を取得する。
+   * @param {String} target 対象文字列
+   * @return 右端の空白を取り除いた文字列
+   */
+  static rtrim(target) {
+    if (typeof target !== "string") return target;
+    return target.replace(/\s+$/, "");
+  }
+
+  /**
+   * 指定した文字列の左端の空白を取り除いた文字列を取得する。
+   * @param {String} target 対象文字列
+   * @return 左端の空白を取り除いた文字列
+   */
+  static ltrim(target) {
+    if (typeof target !== "string") return target;
+    return target.replace(/^\s+/, "");
+  }
+
+  //static replac
 
   static Test() {
     
