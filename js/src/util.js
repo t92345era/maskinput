@@ -72,12 +72,12 @@ export default class Util {
 
   /**
    * 指定した要素のキャレット位置を設定する。
-   * @param {Element} el 
-   * @param {Number} position 
+   * @param {Element} el      キャレット位置を設定する要素
+   * @param {Number} position 設定するキャレット位置
    * @return なし
    */
   static setCaretPosition(el, position) {
-    if (el.selectionStart) {
+    if (el.selectionStart !== undefined) { 
       el.selectionStart = position;
       el.selectionEnd = position;
     }
@@ -112,6 +112,22 @@ export default class Util {
     if (typeof target !== "string") return target;
     return target.replace(/^\s+/, "");
   }
+
+  /**
+   * ペースとイベント発生時のみ呼び出し可。
+   * クリップボードに格納されているテキストデータを取り出します。
+   * @param {ClipbordEvent} event クリップボードイベント
+   */
+  static getClipboardText(event) {
+    var clipboardData, pastedData;
+    
+    // Get pasted data via clipboard API
+    clipboardData = event.clipboardData || window.clipboardData;
+    if (typeof clipboardData === "undefined") return null;
+    pastedData = clipboardData.getData('Text');
+    return pastedData;
+  } 
+
 
   //static replac
 

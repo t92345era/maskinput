@@ -134,6 +134,44 @@ export default class MaskConfig {
   }
 
   /**
+   * basePosition で指定された位置から、次の入力文字の位置を取得します。
+   * @param {number} basePosition 次の入力文字を検索する為の、基準位置
+   * @return 基準位置からの次の入力文字の位置。次の入力文字が存在しない場合は -1。
+   */
+  getNextInputPosition(basePosition) {
+    return this._findInputPosition(basePosition, 1);
+  }
+
+  /**
+   * basePosition で指定された位置から、前の入力文字の位置を取得します。
+   * @param {number} basePosition 前の入力文字を検索する為の、基準位置
+   * @return 基準位置からの前の入力文字の位置。前の入力文字が存在しない場合は -1。
+   */
+  getPrevInputPosition(basePosition) {
+    return this._findInputPosition(basePosition, -1);
+  }
+
+  /**
+   * 内部用 (basePosition で指定された位置から、前後の入力文字の位置を取得します。)
+   * @param {number} basePosition 基準位置
+   * @param {number} move         -1:前方向、1:後方向
+   * @return 前後の入力文字の位置。入力文字が存在しない場合は、-1。
+   */
+  _findInputPosition(basePosition, move) {
+    let pos = basePosition + move;
+    let result = -1;
+
+    while (pos >= 0 && pos < this.length) {
+      if (this.isInput(pos)) {
+        result = pos;
+        break;
+      }
+      pos += move;
+    }
+    return result;
+  }
+
+  /**
    * 画面表示用のマスク文字列を取得
    * @return 画面表示用のマスク文字列
    */
