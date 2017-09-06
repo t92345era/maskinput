@@ -496,18 +496,43 @@ var MaskConfig = function () {
       var result = "";
 
       for (var i = 0; i < this.length; i++) {
-        var c = this.format.substr(i, 1);
+        result += this.getDisplayMaskChar(i);
+      }
 
-        if (c == MaskConfig.MASK_NUM || c == MaskConfig.MASK_L_ALPHA || c == MaskConfig.MASK_U_ALPHA) {
-          //数値・英字入力は "_"で表示
-          result += "_";
-        } else if (c == MaskConfig.MASK_YEAR || c == MaskConfig.MASK_DAY) {
-          //年・日は、大文字に変換する
-          result += this.format.substr(i, 1).toUpperCase();
-        } else {
-          //固定文字
-          result += this.format.substr(i, 1);
-        }
+      return result;
+    }
+
+    /**
+     * 指定した入力位置の画面表示用のマスク文字列を取得
+     * @param {number} position 表示用マスクを取得する入力位置
+     * @return 画面表示用のマスク文字列
+     */
+
+  }, {
+    key: "getDisplayMaskChar",
+    value: function getDisplayMaskChar(position) {
+      if (!this.isValid()) return "";
+
+      var c = this.getMaskChar(position);
+      if (c == "") return "";
+
+      var result = "";
+
+      if (c == MaskConfig.MASK_NUM) {
+        //数値・英字入力は "_"で表示
+        result = "_";
+      } else if (c == MaskConfig.MASK_L_ALPHA) {
+        //英字小文字
+        result = "a";
+      } else if (c == MaskConfig.MASK_U_ALPHA) {
+        //英字大文字
+        result = "A";
+      } else if (c == MaskConfig.MASK_YEAR || c == MaskConfig.MASK_DAY) {
+        //年・日は、大文字に変換する
+        result += c.toUpperCase();
+      } else {
+        //上記以外
+        result += c;
       }
 
       return result;
@@ -578,6 +603,7 @@ jQuery.fn.maskInput = function () {
      * キーダウン
      */
     $(el).keydown(function (e) {
+      var _this = this;
 
       var move = moveDirection.None;
 
@@ -613,6 +639,12 @@ jQuery.fn.maskInput = function () {
         //文字の入れ替えを行い、キャレット位置をもとに戻す
         $(this).val(afterText);
         _util2.default.setCaretPosition(this, moveCaretIndex);
+
+        //背景再描画
+        setTimeout(function () {
+          return _draw2.default.drawBackground(canvas, _this, config);
+        }, 0);
+
         return false;
       } else if (e.keyCode == keyCode.Left) {
         move = moveDirection.Back;
@@ -632,17 +664,16 @@ jQuery.fn.maskInput = function () {
      * 入力抑止用のキープレスイベント
      */
     $(el).keypress(function (e) {
-      var _this = this;
+      var _this2 = this;
 
       //入力位置、入力文字を取得する
       var caretIndex = _util2.default.getCaretPosition(this);
       var selectionLength = _util2.default.getInputSelectionText(this).length;
-      var keybordChar = _util2.default.keyCodeToChar(e.charCode);
+      var keybordChar = autoConvInput(caretIndex, _util2.default.keyCodeToChar(e.charCode), config);
 
       //固定文字の入力値でキーが押下された場合、キャレット位置を次の入力位置まで進める
       // * 次の入力位置でキーが押下された事にする
       if (config.isFixChar(caretIndex)) {
-
         caretIndex = config.getNextInputPosition(caretIndex);
       }
 
@@ -674,7 +705,12 @@ jQuery.fn.maskInput = function () {
       //キャレット位置の設定
       _util2.default.setCaretPosition(this, caretIndex);
       setTimeout(function () {
-        moveCaretPosition(_this, config, moveDirection.Forward);
+        moveCaretPosition(_this2, config, moveDirection.Forward);
+      }, 0);
+
+      //背景再描画
+      setTimeout(function () {
+        return _draw2.default.drawBackground(canvas, _this2, config);
       }, 0);
 
       //入力可能文字の場合、trueを返却
@@ -686,9 +722,7 @@ jQuery.fn.maskInput = function () {
     //キーアップイベント。キーボード入力で値が変更されたタイミングをハンドリング
     $(el).keyup(function (e) {
 
-      setTimeout(function () {
-        return _draw2.default.drawBackground(canvas, el, config);
-      }, 0);
+      //setTimeout(() => Draw.drawBackground(canvas, el, config), 0);
     });
 
     ///////////////////////////////////////////////////////////////////////
@@ -697,10 +731,7 @@ jQuery.fn.maskInput = function () {
      * クリップボードからのペースト
      */
     $(el).on("paste", function (e) {
-
-      //   1234/56/78
-      //   12345
-      //   1234A4
+      var _this3 = this;
 
       //クリップボードのテキストデータ取り出し
       var pastedData = _util2.default.getClipboardText(e.originalEvent);
@@ -723,6 +754,10 @@ jQuery.fn.maskInput = function () {
       var copyText = "";
       var clipIndex = 0,
           i = 0;
+
+      //自動変換できる文字があれば変換
+      pastedData = autoConvInput(caretIndex, pastedData, config);
+      console.log("pastedData:" + pastedData);
 
       while (clipIndex < pastedData.length) {
         var position = caretIndex + i;
@@ -751,11 +786,18 @@ jQuery.fn.maskInput = function () {
 
       //ペースト文字を反映
       newValue = overrideChar(newValue, caretIndex, copyText, config);
+      newValue = cleanUp(newValue, config);
 
       //新しい値を設定
       $(this).val(newValue);
 
+      //キャレット位置をもとに戻す
       _util2.default.setCaretPosition(this, caretIndex);
+
+      //背景再描画
+      setTimeout(function () {
+        return _draw2.default.drawBackground(canvas, _this3, config);
+      }, 0);
 
       return false;
     });
@@ -892,6 +934,41 @@ function overrideChar(target, start, overrideChar, config) {
 }
 
 /**
+ * 入力文字の自動変換
+ * @param {number} caretIndex   キャレット位置
+ * @param {string} inputChar 
+ * @param {MaskConfig} config 
+ * @return 変換後の文字列
+ */
+function autoConvInput(caretIndex, inputChar, config) {
+  if (typeof inputChar !== "string") return inputChar;
+
+  var resultChar = "";
+  for (var i = 0; i < inputChar.length; i++) {
+
+    var position = caretIndex + i;
+
+    if (config.isInput(position)) {
+      //入力文字
+      if (config.getMaskChar(position) == _maskconfig2.default.MASK_L_ALPHA) {
+        //小文字の英字の場合
+        resultChar += inputChar.substr(i, 1).toLowerCase();
+      } else if (config.getMaskChar(position) == _maskconfig2.default.MASK_U_ALPHA) {
+        //大文字の英字の場合
+        resultChar += inputChar.substr(i, 1).toUpperCase();
+      } else {
+        //その他
+        resultChar += inputChar.substr(i, 1);
+      }
+    } else if (config.isFixChar(position)) {
+      //固定文字
+      resultChar += config.getMaskChar(position);
+    }
+  }
+  return resultChar;
+}
+
+/**
  * 補完文字を取得する
  * @param {number} caretIndex  キャレットインデックス
  * @param {MaskConfig} config      マスク設定
@@ -1024,9 +1101,6 @@ var Draw = function () {
 
       var target$ = $(el);
 
-      //表示用のマスク文字列
-      var mask = config.getDisplayMask();
-
       //入力済の桁数分、マスク文字列を左側からカット
       var value = $(el).val();
 
@@ -1037,15 +1111,17 @@ var Draw = function () {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       //入力済みの文字は、マクスを描画しないようにする為、マスク文字をカットする
+      /*
       if (value && value.length > 0) {
-        //全桁入力済み
+         //全桁入力済み
         if (value.length >= config.length) {
           target$.css("background-image", "none");
           return;
         }
-        //未入力 or 部分入力
+         //未入力 or 部分入力
         mask = mask.substr(value.length);
       }
+      */
 
       //描画
       var font = target$.css("font-size") + ' ' + target$.css("font-family");
@@ -1056,16 +1132,33 @@ var Draw = function () {
       pos.y = parseInt(target$.css("padding-top"), 10) + borderTopWidth;
       pos.x = parseInt(target$.css("padding-left"), 10) + borderLeftWidth;
 
+      /*
       //１文字以上入力がある場合、入力文字の最後尾の位置からマスク文字を描画する
       if (value && value.length > 0) {
         var textMetrics = ctx.measureText(value); // TextMetrics オブジェクト
         pos.x += textMetrics.width;
       }
+      */
 
       ctx.textBaseline = "top";
       ctx.font = font;
       ctx.fillStyle = "#999";
-      ctx.fillText(mask, pos.x, pos.y);
+
+      for (var i = 0; i < config.length; i++) {
+
+        var mask = "";
+        if (value.length > i && value.substr(i, 1) != " ") {
+          //入力済み桁
+          mask = value.substr(i, 1);
+        } else {
+          //未入力の桁
+          mask = config.getDisplayMaskChar(i);
+          ctx.fillText(mask, pos.x, pos.y);
+        }
+
+        var textMetrics = ctx.measureText(mask); // TextMetrics オブジェクト
+        pos.x += textMetrics.width;
+      }
 
       var dataUrl = canvas.toDataURL();
       target$.css("background-image", "url(" + dataUrl + ")");

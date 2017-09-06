@@ -65,6 +65,10 @@ jQuery.fn.maskInput = function() {
         //文字の入れ替えを行い、キャレット位置をもとに戻す
         $(this).val(afterText);
         Util.setCaretPosition(this, moveCaretIndex);
+
+        //背景再描画
+        setTimeout(() => Draw.drawBackground(canvas, this, config), 0);
+
         return false;
 
       } else if (e.keyCode == keyCode.Left) {
@@ -89,12 +93,11 @@ jQuery.fn.maskInput = function() {
       //入力位置、入力文字を取得する
       var caretIndex = Util.getCaretPosition(this);
       var selectionLength = Util.getInputSelectionText(this).length;
-      var keybordChar = Util.keyCodeToChar(e.charCode);
+      var keybordChar = autoConvInput(caretIndex, Util.keyCodeToChar(e.charCode), config);
 
       //固定文字の入力値でキーが押下された場合、キャレット位置を次の入力位置まで進める
       // * 次の入力位置でキーが押下された事にする
       if (config.isFixChar(caretIndex)) {
-
         caretIndex = config.getNextInputPosition(caretIndex);
       }
 
@@ -129,6 +132,9 @@ jQuery.fn.maskInput = function() {
         moveCaretPosition(this, config, moveDirection.Forward);        
       }, 0);
 
+      //背景再描画
+      setTimeout(() => Draw.drawBackground(canvas, this, config), 0);
+
       //入力可能文字の場合、trueを返却
       return false;
     });
@@ -138,7 +144,7 @@ jQuery.fn.maskInput = function() {
     //キーアップイベント。キーボード入力で値が変更されたタイミングをハンドリング
     $(el).keyup(function(e) {
 
-      setTimeout(() => Draw.drawBackground(canvas, el, config), 0);
+      //setTimeout(() => Draw.drawBackground(canvas, el, config), 0);
     });
 
 ///////////////////////////////////////////////////////////////////////
@@ -147,10 +153,6 @@ jQuery.fn.maskInput = function() {
      * クリップボードからのペースト
      */
     $(el).on("paste", function(e) {
-
-      //   1234/56/78
-      //   12345
-      //   1234A4
   
       //クリップボードのテキストデータ取り出し
       var pastedData = Util.getClipboardText(e.originalEvent);
@@ -173,6 +175,10 @@ jQuery.fn.maskInput = function() {
       //コピー文字列を作成する
       let copyText = "";
       let clipIndex = 0, i = 0;
+
+      //自動変換できる文字があれば変換
+      pastedData = autoConvInput(caretIndex, pastedData, config);
+      console.log("pastedData:" + pastedData);
 
       while (clipIndex < pastedData.length) {
         let position = caretIndex + i;
@@ -203,11 +209,16 @@ jQuery.fn.maskInput = function() {
 
       //ペースト文字を反映
       newValue = overrideChar(newValue, caretIndex, copyText, config);
+      newValue = cleanUp(newValue, config);
 
       //新しい値を設定
       $(this).val(newValue);
 
+      //キャレット位置をもとに戻す
       Util.setCaretPosition(this, caretIndex);
+
+      //背景再描画
+      setTimeout(() => Draw.drawBackground(canvas, this, config), 0);
 
       return false;
     });
@@ -344,6 +355,42 @@ function overrideChar(target, start, overrideChar, config) {
   //置き換え範囲文字より後ろにある文字を切り取り
   afterText += target.substring(start + length);
   return afterText;
+}
+
+/**
+ * 入力文字の自動変換
+ * @param {number} caretIndex   キャレット位置
+ * @param {string} inputChar 
+ * @param {MaskConfig} config 
+ * @return 変換後の文字列
+ */
+function autoConvInput(caretIndex, inputChar, config) {
+  if (typeof inputChar !== "string") return inputChar;
+
+  var resultChar = "";
+  for (let i = 0; i < inputChar.length; i++) {
+
+    let position = caretIndex + i;
+    
+    if (config.isInput(position)) {
+      //入力文字
+      if (config.getMaskChar(position) == MaskConfig.MASK_L_ALPHA) {
+        //小文字の英字の場合
+        resultChar += inputChar.substr(i, 1).toLowerCase();
+      } else if (config.getMaskChar(position) == MaskConfig.MASK_U_ALPHA) {
+        //大文字の英字の場合
+        resultChar += inputChar.substr(i, 1).toUpperCase();
+      } else {
+        //その他
+        resultChar += inputChar.substr(i, 1);
+      }
+
+    } else if(config.isFixChar(position)) {
+      //固定文字
+      resultChar += config.getMaskChar(position);
+    }
+  }
+  return resultChar;
 }
 
 /**

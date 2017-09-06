@@ -181,23 +181,46 @@ export default class MaskConfig {
     var result = "";
 
     for (let i = 0; i < this.length; i++) {
-      let c = this.format.substr(i, 1);
-
-      if (c == MaskConfig.MASK_NUM || c == MaskConfig.MASK_L_ALPHA 
-        || c == MaskConfig.MASK_U_ALPHA) {
-        //数値・英字入力は "_"で表示
-        result += "_";
-      } else if (c == MaskConfig.MASK_YEAR || c == MaskConfig.MASK_DAY) {
-        //年・日は、大文字に変換する
-        result += this.format.substr(i, 1).toUpperCase();
-      } else {
-        //固定文字
-        result += this.format.substr(i, 1);
-      }
+      result += this.getDisplayMaskChar(i);
     }
     
     return result;
   }
+
+  /**
+   * 指定した入力位置の画面表示用のマスク文字列を取得
+   * @param {number} position 表示用マスクを取得する入力位置
+   * @return 画面表示用のマスク文字列
+   */
+  getDisplayMaskChar(position) {
+    if (!this.isValid()) return "";
+
+    var c = this.getMaskChar(position);
+    if (c == "")
+      return "";
+
+    var result = "";
+
+    if (c == MaskConfig.MASK_NUM) {
+      //数値・英字入力は "_"で表示
+      result = "_";
+    } else if (c == MaskConfig.MASK_L_ALPHA) {
+      //英字小文字
+      result = "a";
+    } else if (c == MaskConfig.MASK_U_ALPHA) {
+      //英字大文字
+      result = "A";
+    } else if (c == MaskConfig.MASK_YEAR || c == MaskConfig.MASK_DAY) {
+      //年・日は、大文字に変換する
+      result += c.toUpperCase();
+    } else {
+      //上記以外
+      result += c;
+    }
+    
+    return result;
+  }
+
   
   static Test() {
     

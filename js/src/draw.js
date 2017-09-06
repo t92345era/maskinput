@@ -22,9 +22,6 @@ export default class Draw {
 
     var target$ = $(el);
 
-    //表示用のマスク文字列
-    var mask = config.getDisplayMask();
-
     //入力済の桁数分、マスク文字列を左側からカット
     var value = $(el).val();
 
@@ -35,15 +32,19 @@ export default class Draw {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     //入力済みの文字は、マクスを描画しないようにする為、マスク文字をカットする
+    /*
     if (value && value.length > 0) {
+
       //全桁入力済み
       if (value.length >= config.length) {
         target$.css("background-image", "none");
         return;
       }
+
       //未入力 or 部分入力
       mask = mask.substr(value.length);
     }
+    */
 
     //描画
     var font = `${target$.css("font-size")} ${target$.css("font-family")}`;
@@ -54,17 +55,34 @@ export default class Draw {
     pos.y = parseInt(target$.css("padding-top"), 10) + borderTopWidth;
     pos.x = parseInt(target$.css("padding-left"), 10) + borderLeftWidth;
 
+    /*
     //１文字以上入力がある場合、入力文字の最後尾の位置からマスク文字を描画する
     if (value && value.length > 0) {
       var textMetrics = ctx.measureText(value); // TextMetrics オブジェクト
       pos.x += textMetrics.width;
     }
+    */
 
     ctx.textBaseline = "top";
     ctx.font = font;
     ctx.fillStyle = "#999";
-    ctx.fillText(mask, pos.x, pos.y);
 
+    for (let i = 0; i < config.length; i++) {
+
+      let mask = "";
+      if (value.length > i && value.substr(i, 1) != " ") {
+        //入力済み桁
+        mask = value.substr(i, 1);
+      } else {
+        //未入力の桁
+        mask = config.getDisplayMaskChar(i);
+        ctx.fillText(mask, pos.x, pos.y);
+      }
+
+      var textMetrics = ctx.measureText(mask); // TextMetrics オブジェクト
+      pos.x += textMetrics.width;
+    }
+  
     var dataUrl = canvas.toDataURL();
     target$.css("background-image", "url(" + dataUrl + ")");
 
