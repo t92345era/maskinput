@@ -18,38 +18,11 @@
 <script>
   $(function() {
     $(".mask").maskInput();
-
-    var el = $("#dateTest").get(0);
-
-    var target$ = $(el);
-    var font =　target$.css("font-size") + " " + target$.css("font-family");
-    var pos = { x: 0, y: 0 };
-    var borderTopWidth =  parseInt(target$.css("border-top-width"), 10);
-    var borderLeftWidth =  parseInt(target$.css("border-left-width"), 10);
-
-    pos.y = parseInt(target$.css("padding-top"), 10) + borderTopWidth;
-    pos.x = parseInt(target$.css("padding-left"), 10) + borderLeftWidth;
-
-    var ctx = document.getElementById('canvas').getContext('2d');
-    ctx.textBaseline = "top";
-    ctx.font = font;
-    ctx.fillStyle = "#999";
-    ctx.fillText("YYYY/MM/DD", pos.x, pos.y);
-
-    var dataUrl = document.getElementById('canvas').toDataURL();
-    target$.css("background-image", "url(" + dataUrl + ")");
-
-
   });
-  
 </script>
 
 <style type="text/css">
-  .mask {
-    /*font-family: */
-    ime-mode:disabled;
-    font-family: Consolas, 'Courier New', Courier, Monaco, monospace;
-  }
+
   #dateTest {
     vertical-align: top;
   }
@@ -59,27 +32,35 @@
 <body>
 <div class="container">
 
-  <h1>マスク入力デモ</h1>
+  <h1 class="text-center">マスク入力デモ</h1>
   <div class="row" style="margin-top:30px;">
-    <div class="col-xs-3 text-right">日付</div>
-    <div class="col-xs-9">
-      <input type="text" class="mask" 
-        id="ttt" 
-        data-mask-format="yyyy aaa-AAAA"></div>
-    </div>
-    <div class="col-xs-3 text-right">日付</div>
-    <div class="col-xs-9">
-      <input type="text" class="mask" data-mask-format="####"></div>
-    </div>
+
+      <div class="col-xs-3 text-right">日付</div>
+      <div class="col-xs-9">
+        <input type="text" class="mask" data-mask-format="yyyy/MM/dd" />
+      </div>
+
+      <div class="col-xs-3 text-right">英字(大文字)</div>
+      <div class="col-xs-9">
+        <input type="text" class="mask" data-mask-format="AAAA" />
+      </div>
+
+      <div class="col-xs-3 text-right">英字(小文字)</div>
+      <div class="col-xs-9">
+        <input type="text" class="mask" data-mask-format="aaaa" />
+      </div>
+
+      <div class="col-xs-3 text-right">数字</div>
+      <div class="col-xs-9">
+        <input type="text" class="mask" data-mask-format="#####" />
+      </div>
+
+      <div class="col-xs-3 text-right">郵便番号</div>
+      <div class="col-xs-9">
+        <input type="text" class="mask" data-mask-format="###-####" />
+      </div>
   </div>
 
-  <div id="wrap" style="border:1px solid #999;">
-    <canvas id="canvas" width="300px" height="100px"></canvas>
-  </div>
-
-  <div style="margin:20px 0 0 20px;">
-      <input type="text" id="dateTest" data-mask-format="yyyy/MM/dd"></div>
-  </div>
 </div>
 </body>
 </html>

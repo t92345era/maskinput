@@ -583,7 +583,7 @@ $(function () {
 
   //お絵描き用のキャンパス作成
   if ($("#jq-maskinput-canvas").length == 0) {
-    $("body").append("<canvas id='jq-maskinput-canvas' ></canvas>");
+    $("body").append("<canvas id='jq-maskinput-canvas' style='display:none' ></canvas>");
   }
   canvas = $("#jq-maskinput-canvas").get(0);
 });
@@ -596,6 +596,12 @@ jQuery.fn.maskInput = function () {
 
     //設定されたマスク文字列で、設定クラス生成
     var config = new _maskconfig2.default($(el).data("mask-format"));
+
+    //CSS
+    $(el).css({
+      'ime-mode': "disabled",
+      'font-family': "Consolas, 'Courier New', Courier, Monaco, monospace"
+    });
 
     ///////////////////////////////////////////////////////////////////////
 

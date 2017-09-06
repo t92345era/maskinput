@@ -8,7 +8,7 @@ $(function() {
 
   //お絵描き用のキャンパス作成
   if ($("#jq-maskinput-canvas").length == 0) {
-    $("body").append("<canvas id='jq-maskinput-canvas' ></canvas>");
+    $("body").append("<canvas id='jq-maskinput-canvas' style='display:none' ></canvas>");
   }
   canvas = $("#jq-maskinput-canvas").get(0);
 });
@@ -16,12 +16,17 @@ $(function() {
 //プラグイン処理
 jQuery.fn.maskInput = function() {
 
-
   //対象要素分のループ
   return this.each((index, el) => {
 
     //設定されたマスク文字列で、設定クラス生成
     var config = new MaskConfig($(el).data("mask-format"));
+
+    //CSS
+    $(el).css({
+      'ime-mode': "disabled",
+      'font-family': "Consolas, 'Courier New', Courier, Monaco, monospace"
+    });
 
 ///////////////////////////////////////////////////////////////////////
 
