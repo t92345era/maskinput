@@ -37,27 +37,29 @@ jQuery.fn.maskInput = function() {
       
       var move = moveDirection.None;
 
-      if (e.keyCode == keyCode.BackSpace) {
-        move = moveDirection.Back;
+      if (e.keyCode == keyCode.BackSpace || e.keyCode == keyCode.Delete) {
+        // backspace or delete キーが押下された場合の、文字削除処理
+
+        //deleteキーが押されたか判定するようのフラグ
+        var isDelete = e.keyCode == keyCode.Delete;
 
         //現在のキャレット位置と、選択テキストの文字数を取得する
         var caretIndex = Util.getCaretPosition(this);
         var selectionLength = Util.getInputSelectionText(this).length;
 
         //左端で backspaceキーが押下された場合は何もしない
-        if (caretIndex == 0 && selectionLength == 0)
+        if (!isDelete && caretIndex == 0 && selectionLength == 0) {
           return;
-        
+        }
+          
         //削除開始位置・削除文字数
-        var start = (selectionLength == 0 ? caretIndex - 1 : caretIndex);
+        var start = (selectionLength > 0 || isDelete ? caretIndex : caretIndex - 1);
         var removeLength = Math.max(1, selectionLength);
 
         if (selectionLength == 0 && config.isFixChar(start)) {
           //固定文字で backspaceキーが押下された場合、前の入力を消す
-          while (start > 0) {
-            if (config.isInput(start)) break;
-            start--;
-          }
+          start = config.getPrevInputPosition(start);
+          if (start < 0) start = 0;
         }
 
         //削除文字をスペースで置換
@@ -65,8 +67,10 @@ jQuery.fn.maskInput = function() {
         afterText = cleanUp(afterText, config);
 
         //削除後のキャレット位置検索
-        let moveCaretIndex = findInputCaretPosition(this, config, moveDirection.Back);
-
+        let moveCaretIndex = isDelete ? 
+            caretIndex : 
+            findInputCaretPosition(this, config, moveDirection.Back);
+        
         //文字の入れ替えを行い、キャレット位置をもとに戻す
         $(this).val(afterText);
         Util.setCaretPosition(this, moveCaretIndex);
@@ -76,12 +80,16 @@ jQuery.fn.maskInput = function() {
 
         return false;
 
+      } else if (e.keyCode == keyCode.Delete) {
+        console.log("key code:" + e.keyCode);
+
       } else if (e.keyCode == keyCode.Left) {
         move = moveDirection.Back;
       } else if (e.keyCode == keyCode.Right) {
         move = moveDirection.Forward;
       }
 
+      
       //キャレット位置移動
       moveCaretPosition(this, config, move);
 
