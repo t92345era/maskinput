@@ -26,6 +26,7 @@
   #dateTest {
     vertical-align: top;
   }
+  
 </style>
 
 </head>
@@ -34,40 +35,35 @@
 
   <h1 class="text-center">マスク入力デモ</h1>
   <div class="row" style="margin-top:30px;">
-
-      <div class="col-xs-3 text-right">日付</div>
-      <div class="col-xs-9">
-        <input type="text" class="mask" data-mask-format="yyyy/MM/dd" />
-      </div>
-
-      <div class="col-xs-3 text-right">英字(大文字)</div>
-      <div class="col-xs-9">
-        <input type="text" class="mask" data-mask-format="AAAA" />
-      </div>
-
+    <div class="col-xs-3 text-right">日付</div>
+    <div class="col-xs-9">
+      <input type="text" class="mask" data-mask-format="yyyy/MM/dd" />
+    </div>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <div class="col-xs-3 text-right">英字(大文字)</div>
+    <div class="col-xs-9">
+      <input type="text" class="mask" data-mask-format="AAAA" />
+    </div>
+  </div>
+  <div class="row" style="margin-top:10px;">
       <div class="col-xs-3 text-right">英字(小文字)</div>
       <div class="col-xs-9">
         <input type="text" class="mask" data-mask-format="aaaa" />
       </div>
-
+    </div>
+      <div class="row" style="margin-top:10px;">
       <div class="col-xs-3 text-right">数字</div>
       <div class="col-xs-9">
         <input type="text" class="mask" data-mask-format="#####" />
       </div>
-
+    </div>
+      <div class="row" style="margin-top:10px;">
       <div class="col-xs-3 text-right">郵便番号</div>
       <div class="col-xs-9">
         <input type="text" class="mask" data-mask-format="###-####" />
       </div>
-  </div>
-
-  <div class="row" style="margin-top:40px">
-      <div class="col-xs-3 text-right">郵便番号</div>
-      <div class="col-xs-9">
-        <input type="text" class="mask" 
-        data-mask-format="###-####"
-        style="width:100px;" />
-      </div>
+    </div>
   </div>
 
 </div>

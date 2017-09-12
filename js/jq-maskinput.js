@@ -640,6 +640,31 @@ jQuery.fn.maskInput = function () {
 
         //削除文字をスペースで置換
         var afterText = overrideSpace($(this).val(), start, removeLength, config);
+        if (isDelete) {
+          //deleteキー押下時は、削除文字以降にある文字を左に詰める
+          //例) 3を消したら、以下の様に、文字を詰める
+          // 1234/56/78 -> 12_4/56/78 -> 1245/67/8
+
+          //削除文字前までの文字を設定
+          var trimText = afterText.substring(0, start);
+          var pos = start + removeLength;
+
+          //削除文字以降の文字を、詰めながら trimText変数に結合していく
+          while (pos < config.length && pos < afterText.length) {
+            if (config.isInput(pos)) {
+              var c = afterText.substr(pos, 1);
+              if (config.isFixChar(trimText.length)) {
+                trimText += afterText.substr(trimText.length, 1);
+                continue;
+              }
+              trimText += c;
+            }
+            pos++;
+          }
+
+          //文字詰めした結果を変更後テキストとして設定
+          afterText = trimText;
+        }
         afterText = cleanUp(afterText, config);
 
         //削除後のキャレット位置検索
