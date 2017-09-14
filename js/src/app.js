@@ -30,11 +30,15 @@ jQuery.fn.maskInput = function() {
 
 ///////////////////////////////////////////////////////////////////////
 
+    var enterFlg = false;
+
     /**
      * キーダウン
      */
     $(el).keydown(function(e) {
-      
+
+      console.log("keydown : " + e.keyCode);
+      enterFlg = false;
       var move = moveDirection.None;
 
       if (e.keyCode == keyCode.BackSpace || e.keyCode == keyCode.Delete) {
@@ -63,32 +67,7 @@ jQuery.fn.maskInput = function() {
         }
 
         //削除文字をスペースで置換
-        var afterText = overrideSpace($(this).val(), start, removeLength, config);
-        if (isDelete) {
-          //deleteキー押下時は、削除文字以降にある文字を左に詰める
-          //例) 3を消したら、以下の様に、文字を詰める
-          // 1234/56/78 -> 12_4/56/78 -> 1245/67/8
-
-          //削除文字前までの文字を設定
-          let trimText = afterText.substring(0, start);
-          let pos = start + removeLength;
-
-          //削除文字以降の文字を、詰めながら trimText変数に結合していく
-          while (pos < config.length && pos < afterText.length) {
-            if (config.isInput(pos)) {
-              let c = afterText.substr(pos, 1);
-              if (config.isFixChar(trimText.length)) {
-                trimText += afterText.substr(trimText.length, 1);
-                continue;
-              }
-              trimText += c;
-            }
-            pos++;
-          }
-
-          //文字詰めした結果を変更後テキストとして設定
-          afterText = trimText;
-        }
+        var afterText = overrideSpace($(this).val(), start, removeLength, config, isDelete);
         afterText = cleanUp(afterText, config);
 
         //削除後のキャレット位置検索
@@ -104,9 +83,6 @@ jQuery.fn.maskInput = function() {
         setTimeout(() => Draw.drawBackground(canvas, this, config), 0);
 
         return false;
-
-      } else if (e.keyCode == keyCode.Delete) {
-        console.log("key code:" + e.keyCode);
 
       } else if (e.keyCode == keyCode.Left) {
         move = moveDirection.Back;
@@ -127,6 +103,12 @@ jQuery.fn.maskInput = function() {
      * 入力抑止用のキープレスイベント
      */
     $(el).keypress(function(e) {
+
+      if (e.keyCode == keyCode.Enter) {
+        console.log("keypress : enter!");
+        enterFlg = true;
+        return;
+      }
 
       //入力位置、入力文字を取得する
       var caretIndex = Util.getCaretPosition(this);
@@ -181,8 +163,11 @@ jQuery.fn.maskInput = function() {
     
     //キーアップイベント。キーボード入力で値が変更されたタイミングをハンドリング
     $(el).keyup(function(e) {
-
-      //setTimeout(() => Draw.drawBackground(canvas, el, config), 0);
+      console.log("keyup : " + e.keyCode);
+      if (e.keyCode == keyCode.Enter || e.keyCode == keyCode.ImeInput) {
+        console.log("keyup : enter!");
+        return;
+      }
     });
 
 ///////////////////////////////////////////////////////////////////////
@@ -216,7 +201,7 @@ jQuery.fn.maskInput = function() {
 
       //自動変換できる文字があれば変換
       pastedData = autoConvInput(caretIndex, pastedData, config);
-      console.log("pastedData:" + pastedData);
+      //console.log("pastedData:" + pastedData);
 
       while (clipIndex < pastedData.length) {
         let position = caretIndex + i;
@@ -337,21 +322,49 @@ function moveCaretPosition(el, config, move, count) {
  * @param {number} start       開始文字位置
  * @param {number} length      開始位置からスペースで置き換える文字数
  * @param {MaskConfig} config  マスク設定
+ * @param {boolean} trim       トリムする場合 true
  * @return 置き換え後の文字列
  */
-function overrideSpace(target, start, length, config) {
-  console.log(`start overrideSpace:target=${target},start=${start},length=${length},config=${config}`);
+function overrideSpace(target, start, length, config, trim) {
 
-  //置き換え文字数分のスペースを作成
-  let spaceChar = "";
-  for (let i = 0; i < length; i++)
-    spaceChar += " ";
+  let isTrim = (typeof trim === "boolean" && trim) ? true : false;
 
-  //指定文字での置き換え関数を呼ぶ
-  var ret = overrideChar(target, start, spaceChar, config);
+  if (isTrim) {
+    //トリムする場合
 
-  console.log("end overrideSpace:result=" + ret);
-  return ret;
+    //削除文字前までの文字を設定
+    let trimText = target.substring(0, start);
+    let pos = start + length;
+
+    //削除文字以降の文字を、詰めながら trimText変数に結合していく
+    while (pos < config.length && pos < target.length) {
+      if (config.isInput(pos)) {
+        let c = target.substr(pos, 1);
+        if (config.isFixChar(trimText.length)) {
+          trimText += target.substr(trimText.length, 1);
+          continue;
+        }
+        trimText += c;
+      }
+      pos++;
+    }
+    return trimText;
+
+  } else {
+    //スペース文字で上書きする場合
+
+    //置き換え文字数分のスペースを作成
+    let spaceChar = "";
+    for (let i = 0; i < length; i++)
+      spaceChar += " ";
+
+    //指定文字での置き換え関数を呼ぶ
+    var ret = overrideChar(target, start, spaceChar, config);
+
+    //console.log("end overrideSpace:result=" + ret);
+    return ret;
+
+  }
 }
 
 /**
@@ -474,9 +487,6 @@ function cleanUp(value, config) {
     newValue = value.substr(0, config.length);
   }
 
-
-  // 1234/44/4_
-
   //文字の後ろからループして、不要な空白文字を削除する
   var len = newValue.length;
   for (let i = newValue.length - 1; i >= 0; i--) {
@@ -488,7 +498,6 @@ function cleanUp(value, config) {
       break;
     }
   }
-  console.log("len:" + len);
   newValue = newValue.substr(0, len);
   return newValue;
 }
@@ -503,7 +512,9 @@ var keyCode = {
   Up: 38,
   Right: 39,
   Down: 40,
-  Delete: 46
+  Delete: 46,
+  Enter: 13,
+  ImeInput: 229
 };
 
 /**
