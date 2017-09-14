@@ -740,10 +740,39 @@ jQuery.fn.maskInput = function () {
 
     //キーアップイベント。キーボード入力で値が変更されたタイミングをハンドリング
     $(el).keyup(function (e) {
-      console.log("keyup : " + e.keyCode);
+      var _this3 = this;
+
       if (e.keyCode == keyCode.Enter || e.keyCode == keyCode.ImeInput) {
-        console.log("keyup : enter!");
-        return;
+
+        //現在の入力値
+        var inputValue = $(this).val().substr(0, config.length);
+        var newValue = "";
+
+        //変更後のキャレット位置
+        var caretIndex = -1;
+
+        //日本語などの使用禁止文字は、ここでカット
+        for (var i = 0; i < inputValue.length; i++) {
+
+          if (config.isFixChar(i)) {
+            //固定文字
+            newValue += config.getDisplayMaskChar(i);
+          } else {
+            //入力文字(禁止文字が入力された場合、スペースで置き換え)
+            var result = config.testInput(i, inputValue.substr(i, 1));
+            newValue += result ? inputValue.substr(i, 1) : " ";
+            if (!result && caretIndex == -1) caretIndex = i;
+          }
+        }
+
+        //日本語等の禁止文字が入力された場合、テキストを置き換え
+        if (newValue != $(this).val()) {
+          $(this).val(cleanUp(newValue, config));
+          setTimeout(function () {
+            _util2.default.setCaretPosition(_this3, caretIndex);
+            _draw2.default.drawBackground(canvas, _this3, config);
+          }, 0);
+        }
       }
     });
 
@@ -753,7 +782,7 @@ jQuery.fn.maskInput = function () {
      * クリップボードからのペースト
      */
     $(el).on("paste", function (e) {
-      var _this3 = this;
+      var _this4 = this;
 
       //クリップボードのテキストデータ取り出し
       var pastedData = _util2.default.getClipboardText(e.originalEvent);
@@ -818,7 +847,7 @@ jQuery.fn.maskInput = function () {
 
       //背景再描画
       setTimeout(function () {
-        return _draw2.default.drawBackground(canvas, _this3, config);
+        return _draw2.default.drawBackground(canvas, _this4, config);
       }, 0);
 
       return false;
