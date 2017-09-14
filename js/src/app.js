@@ -37,7 +37,7 @@ jQuery.fn.maskInput = function() {
      */
     $(el).keydown(function(e) {
 
-      console.log("keydown : " + e.keyCode);
+      //console.log("keydown : " + e.keyCode);
       enterFlg = false;
       var move = moveDirection.None;
 
@@ -105,7 +105,7 @@ jQuery.fn.maskInput = function() {
     $(el).keypress(function(e) {
 
       if (e.keyCode == keyCode.Enter) {
-        console.log("keypress : enter!");
+        //console.log("keypress : enter!");
         enterFlg = true;
         return;
       }
